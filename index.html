@@ -45,7 +45,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prompt Builder Web App</title>
+    <!-- Updated title to give the app a more memorable identity -->
+    <title>CinePrompt Studio</title>
     <style>
         /* Dark theme styling */
         body {
@@ -146,26 +147,38 @@
 </head>
 <body>
     <div class="container">
-        <!-- Brand heading -->
-        <h1>digital homeless cinematic prompt builder</h1>
+        <!-- Updated heading to reflect the new name -->
+        <h1>CinePrompt Studio</h1>
         <!-- Camera settings come first -->
-        <!-- Row for camera type, lens, framing and aspect ratio -->
+        <!-- Row for camera/lens selections and framing/aspect ratio.  
+             Each of the first two columns contains a pair of dropdowns.  
+             Tooltips explain how to interact with the nested selects. -->
         <div class="row">
-            <div class="col">
-                <label for="camera">Camera</label>
+            <div class="col tooltip">
+                <label for="camera_type">Camera</label>
+                <!-- First dropdown selects the category of camera (film, photo/digital, phone or other).  
+                     When a category is chosen the second dropdown below updates to list the appropriate models. -->
+                <select id="camera_type"></select>
                 <select id="camera"></select>
+                <span class="tooltiptext">Choose a camera category (film, photo/digital, phone or other) and then select a specific model.</span>
             </div>
-            <div class="col">
-                <label for="lens">Lens / Focal Length</label>
+            <div class="col tooltip">
+                <label for="lens_type">Lens / Focal Length</label>
+                <!-- Similar to camera, the lens selection is split into type and specific focal length.  
+                     Selecting a lens type will populate the second dropdown with relevant focal lengths or lens names. -->
+                <select id="lens_type"></select>
                 <select id="lens"></select>
+                <span class="tooltiptext">Select a lens category (standard, zoom, macro, artistic, phone, etc.) followed by a focal length or lens name.</span>
             </div>
-            <div class="col">
+            <div class="col tooltip">
                 <label for="framing">Shot Framing</label>
                 <select id="framing"></select>
+                <span class="tooltiptext">Choose the general orientation of the frame (vertical, horizontal, square).</span>
             </div>
-            <div class="col">
+            <div class="col tooltip">
                 <label for="aspect_ratio">Aspect Ratio</label>
                 <select id="aspect_ratio"></select>
+                <span class="tooltiptext">Select the width‑to‑height ratio for the image.</span>
             </div>
         </div>
 
@@ -174,23 +187,28 @@
             <div class="col tooltip">
                 <label for="composition">Composition</label>
                 <select id="composition" multiple></select>
-                <span class="tooltiptext">Hold Ctrl (or Cmd) to select multiple composition rules.</span>
+                <!-- Provide a custom composition field for additional rules not listed -->
+                <input type="text" id="compositionDetails" placeholder="Custom composition (optional)" style="margin-top:4px;">
+                <span class="tooltiptext">Select one or more composition rules (use Ctrl/Cmd for multi‑select) or enter your own composition below.</span>
             </div>
             <div class="col tooltip">
                 <label for="shot_size">Shot Size</label>
                 <select id="shot_size"></select>
-                <span class="tooltiptext">Choose how close or wide the camera frames the subject.</span>
+                <input type="text" id="shotSizeDetails" placeholder="Shot size details (optional)" style="margin-top:4px;">
+                <span class="tooltiptext">Choose how close or wide the camera frames the subject, or specify a custom shot size.</span>
             </div>
             <div class="col tooltip">
                 <label for="camera_move">Camera Movement</label>
-                <!-- single‑select instead of multi -->
-                <select id="camera_move"></select>
-                <span class="tooltiptext">Select one camera move.</span>
+                <!-- Allow multiple camera movements -->
+                <select id="camera_move" multiple></select>
+                <input type="text" id="cameraMoveDetails" placeholder="Camera movement details (optional)" style="margin-top:4px;">
+                <span class="tooltiptext">Select one or more camera moves (use Ctrl/Cmd for multi‑select) and optionally provide further detail.</span>
             </div>
-            <div class="col">
+            <div class="col tooltip">
                 <label for="lighting">Lighting Time</label>
                 <select id="lighting"></select>
                 <input type="text" id="lightingDetails" placeholder="Lighting details (optional)" style="margin-top:4px;">
+                <span class="tooltiptext">Select the time of day or lighting condition. Additional details can be provided below.</span>
             </div>
         </div>
 
@@ -247,10 +265,11 @@
         <!-- Row for negative elements -->
         <div class="row">
             <div class="col tooltip">
-                <label for="negative_elements">Negative Elements</label>
-                <select id="negative_elements" multiple></select>
-                <span class="tooltiptext">Hold Ctrl (or Cmd) to select multiple negative prompts.</span>
-                <input type="text" id="negativeDetails" placeholder="Negative elements details (optional)" style="margin-top:4px;">
+                <label for="negative-checkboxes">Negative Elements</label>
+                <!-- Replace multi‑select with a group of checkboxes for negative prompts -->
+                <div id="negative-checkboxes" class="mood-checkboxes" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                <input type="text" id="negativeDetails" placeholder="Additional negative prompts (optional)" style="margin-top:4px; width:100%;">
+                <span class="tooltiptext">Choose any number of negative prompts and/or enter your own to exclude unwanted elements.</span>
             </div>
             <div class="col" style="flex: 1 1 100%;">
                 <!-- Empty cell for spacing -->
@@ -309,6 +328,7 @@
     // descriptions of iconic early camera phones like the Samsung SCH‑V200, Sharp J-SH04,
     // Sanyo SCP-5300, Audiovox PM8920, Nokia N90, Sony Ericsson K750i/K800i, Nokia N95
     // and Samsung INNOV8【514609640034993†L271-L283】【466617726925691†L126-L134】.
+    // Camera models by category.  Film, digital (photo) and phone lists are used when the user picks a camera type.
     const FILM_CAMERAS = [
         "Daguerreotype (1839)", "The Kodak (1888)", "Kodak Brownie (1900)",
         "Graflex Speed Graphic (1912)", "Leica I (1925)", "Kine Exakta I (1936)",
@@ -331,30 +351,51 @@
         "Samsung Galaxy S20 (2020)", "Redmi K30 Pro (2020)", "iPhone 12 Pro (2020)"
     ];
 
+    // Additional camera models for the "Other" category (drones, action cams and unusual devices).
+    const OTHER_CAMERAS = [
+        "GoPro HERO10 (2021)", "DJI Phantom 4 (2016)", "DJI Mavic 3 (2021)", "Blackmagic Pocket Cinema Camera 6K (2019)",
+        "360° Ricoh Theta Z1 (2019)", "Thermal camera", "Security CCTV", "Polaroid camera"
+    ];
+
+    // Top‑level camera categories shown in the first dropdown.  The "Photo" category corresponds to digital cameras.
+    const CAMERA_TYPES = ["Film", "Photo", "Phone", "Other"];
+
+    // Lookup mapping camera type to specific camera lists.
+    const CAMERAS_BY_TYPE = {
+        Film: FILM_CAMERAS,
+        Photo: DIGITAL_CAMERAS,
+        Phone: PHONE_CAMERAS,
+        Other: OTHER_CAMERAS
+    };
+
     // Lens lists organised by type.  Each group includes a "None" option that is added later
     // when populating the select element.
-    const FILM_LENSES = [
-        "24mm", "28mm", "35mm", "50mm", "85mm", "135mm",
-        "18-55mm", "24-70mm", "70-200mm", "Vintage", "Anamorphic"
-    ];
-    const DIGITAL_LENSES = [
-        "16-35mm", "24-105mm", "70-200mm", "100-400mm", "50mm",
-        "Macro", "Telephoto", "Prime", "Zoom", "Anamorphic"
-    ];
-    const PHONE_LENSES = [
-        "Wide", "Ultra-wide", "Telephoto", "Macro", "Periscope",
-        "Depth sensor", "Monochrome"
-    ];
+    // Lens focal lengths and types organised into categories.  Users select a lens type and then a specific lens or focal length.
+    const LENS_TYPES = {
+        "Standard": ["24mm", "28mm", "35mm", "50mm", "85mm", "135mm"],
+        "Zoom": ["18-55mm", "24-70mm", "24-105mm", "70-200mm", "100-400mm"],
+        "Macro": ["Macro", "Micro"],
+        "Artistic": ["Anamorphic", "Fisheye", "Tilt-shift", "Soft focus", "Lensbaby"],
+        "Phone": ["Wide", "Ultra-wide", "Telephoto", "Macro", "Periscope", "Depth sensor", "Monochrome", "Front camera"],
+        "Vintage": ["Vintage", "Polaroid"]
+    };
     const FRAMINGS = ["Vertical", "Horizontal", "Square"];
     const ASPECT_RATIOS = ["3:2", "4:3", "16:9", "9:16", "1:1", "2.39:1"];
+    // Extend composition options with additional classic photographic rules
     const COMPOSITIONS = [
         { name: "Rule of thirds", desc: "Place key elements along the thirds of the frame" },
         { name: "Centered", desc: "Subject is centred within the frame" },
         { name: "Leading lines", desc: "Compositional lines guide the viewer's eye" },
         { name: "Negative space", desc: "Large areas of empty space around the subject" },
         { name: "Symmetry", desc: "Balanced elements mirrored across an axis" },
-        { name: "Dutch angle", desc: "Frame is tilted for dynamic tension" }
+        { name: "Dutch angle", desc: "Frame is tilted for dynamic tension" },
+        { name: "Golden ratio", desc: "Elements follow the spiral proportions of the golden ratio" },
+        { name: "Frame within a frame", desc: "Use natural or architectural frames around the subject" },
+        { name: "Patterns & repetition", desc: "Highlight repeating shapes or forms" },
+        { name: "Minimalism", desc: "Use a simple composition with few elements" },
+        { name: "Triangular composition", desc: "Arrange subjects to form a triangle for balance" }
     ];
+    // Extend shot sizes with group and specialty shots
     const SHOT_SIZES = [
         { name: "Extreme close-up (ECU)", desc: "Focus on a small detail like eyes or hands" },
         { name: "Close-up (CU)", desc: "Head and shoulders of a person" },
@@ -368,8 +409,12 @@
         { name: "Establishing shot (ES)", desc: "Wide view showing context" },
         { name: "Medium wide shot (MWS)", desc: "Shows subject from knees up with some environment" },
         { name: "Over-the-shoulder (OTS)", desc: "Frame over the shoulder of a subject" },
-        { name: "Point-of-view (POV)", desc: "Shows what a character sees" }
+        { name: "Point-of-view (POV)", desc: "Shows what a character sees" },
+        { name: "Two-shot", desc: "Includes two subjects in a balanced composition" },
+        { name: "Three-shot", desc: "Includes three subjects in the frame" },
+        { name: "Group shot", desc: "Captures several subjects together" }
     ];
+    // Expand camera movement list and switch to multi-select.  These items describe many common cinematic moves.
     const CAMERA_MOVES = [
         { name: "Static", desc: "No camera movement" },
         { name: "Pan", desc: "Rotate horizontally from a fixed point" },
@@ -381,14 +426,35 @@
         { name: "Handheld", desc: "Unstable, free camera movement" },
         { name: "Steadicam", desc: "Smooth stabilised handheld movement" },
         { name: "Pedestal", desc: "Raise or lower camera vertically" },
-        { name: "Roll", desc: "Rotate camera along the lens axis" }
+        { name: "Roll", desc: "Rotate camera along the lens axis" },
+        { name: "Crane", desc: "Move camera vertically using a crane or jib" },
+        { name: "Aerial", desc: "High‑angle movement from a drone or helicopter" },
+        { name: "Tracking shot", desc: "Follow the subject along a path" },
+        { name: "Arc shot", desc: "Move around the subject in an arc" },
+        { name: "Dolly zoom", desc: "Simultaneous zoom and dolly creating perspective distortion" },
+        { name: "360-degree pan", desc: "Rotate the camera in a full circle" }
     ];
-    const LIGHTING_TIMES = ["Golden hour", "Blue hour", "Morning", "Noon", "Afternoon", "Evening", "Night"];
+    // Lighting times expanded with more specific times of day
+    const LIGHTING_TIMES = ["Golden hour", "Blue hour", "Morning", "Noon", "Afternoon", "Evening", "Night", "Dawn", "Sunrise", "Sunset", "Twilight", "Midnight", "Magic hour"];
     const WEATHERS = ["Clear", "Cloudy", "Fog", "Drizzle", "Rain", "Snow", "Haze", "Mist", "Backlit dust"];
-    const COLOR_MOODS = ["Warm", "Cool", "Teal-orange", "Muted", "Monochrome", "Vibrant", "Pastel"];
+    // Colour moods as objects with descriptions; extended to include additional tonal palettes
+    const COLOR_MOODS = [
+        { name: "Warm", desc: "Emphasises reds, oranges and yellows for a cosy feel" },
+        { name: "Cool", desc: "Emphasises blues and greens for a calm, detached feel" },
+        { name: "Teal-orange", desc: "High contrast mix of teal shadows and orange highlights" },
+        { name: "Muted", desc: "Desaturated colours for a subdued mood" },
+        { name: "Monochrome", desc: "Single hue or black and white palette" },
+        { name: "Vibrant", desc: "Highly saturated colours for energy and excitement" },
+        { name: "Pastel", desc: "Soft, delicate colours for a dreamlike atmosphere" },
+        { name: "High contrast", desc: "Strong tonal differences between light and dark areas" },
+        { name: "Bleak", desc: "Desaturated and cold tones for a somber feel" },
+        { name: "Colourful", desc: "Rich, varied hues with high saturation" },
+        { name: "Earth tones", desc: "Browns, greens and natural hues for grounded scenes" }
+    ];
     const FILM_TEXTURES = ["35mm grain", "16mm grain", "Light leak", "Halation", "Bloom", "Chromatic aberration", "VHS", "Polaroid", "Dust & scratches", "Sepia tone", "Film burn", "Bokeh", "Sprocket holes"];
     const ENVIRONMENTS = ["Urban", "Suburban", "Coastal", "Forest", "Desert", "Mountain", "Indoor", "Industrial", "Rural", "Futuristic", "Vintage"];
     const ERAS_STYLES = ["1870s", "1880s", "1890s", "1900s", "1910s", "1920s", "1930s", "1940s", "1950s", "1960s", "1970s", "1980s", "1990s", "2000s", "2010s", "2020s", "Contemporary"];
+    // Additional motion cues to broaden expressive possibilities
     const MOTION_CUES = [
         { name: "Motion blur", desc: "Subject or background blurred by movement" },
         { name: "Long exposure trails", desc: "Light streaks from long exposures" },
@@ -399,16 +465,29 @@
         { name: "Parallax", desc: "Foreground and background move at different speeds" },
         { name: "Hyper-lapse", desc: "Long distance time-lapse movement" },
         { name: "Rack focus", desc: "Shift focus between subjects" },
-        { name: "Zoom", desc: "Change focal length for dramatic emphasis" }
+        { name: "Zoom", desc: "Change focal length for dramatic emphasis" },
+        { name: "Stop motion", desc: "Animate through sequential still images" },
+        { name: "Bullet time", desc: "Time appears to stand still while the camera moves around" },
+        { name: "Glitch effect", desc: "Simulated digital artefacts and jitter" },
+        { name: "Speed ramping", desc: "Sudden changes between slow and fast motion" },
+        { name: "Frame skipping", desc: "Intermittent frame drops to suggest erratic motion" },
+        { name: "Stroboscopic", desc: "Rapid flashes freezing motion" },
+        { name: "Tilt-shift blur", desc: "Selective focus creates miniature effect" },
+        { name: "Reverse motion", desc: "Subject appears to move backwards in time" }
     ];
     const REFLECTIONS = ["Wet pavement", "Glass", "Puddles", "Neon reflections", "Metallic surfaces", "Water", "Mirrors"];
     const PEOPLE_DENSITY = ["Empty", "Sparse", "Normal", "Crowded"];
+    // Negative prompts extended with more exclusions
     const NEGATIVE_ELEMENTS = [
         { name: "No watermark", desc: "Exclude watermarks from the output" },
         { name: "No text", desc: "Exclude any text from the image" },
         { name: "No logos", desc: "Avoid brand logos or trademarks" },
         { name: "No distorted faces", desc: "Avoid unnatural face distortions" },
-        { name: "No clutter", desc: "Keep the scene free of unnecessary objects" }
+        { name: "No clutter", desc: "Keep the scene free of unnecessary objects" },
+        { name: "No reflections", desc: "Remove unwanted reflections or glare" },
+        { name: "No violence", desc: "Exclude violent or graphic content" },
+        { name: "No grain", desc: "Keep the image smooth and free of film grain" },
+        { name: "No background clutter", desc: "Simplify the background" }
     ];
 
     // Default example presets (10 presets) drawn from the original Python code.
@@ -653,6 +732,176 @@
                 mood: "Joyful and nostalgic"
             }
         }
+        ,
+        // Additional cinematic presets inspired by classic and international films
+        {
+            title: "The Godfather wedding",
+            data: {
+                subject: "A classic 1970s wedding banquet with guests in formal wear, warm candlelight illuminating their faces.",
+                camera: "Canon AE-1 (1976)",
+                lens: "50mm",
+                framing: "Horizontal",
+                aspect_ratio: "4:3",
+                composition: ["Symmetry", "Centered"],
+                shot_size: "Group shot",
+                camera_move: ["Static"],
+                lighting: "Evening",
+                weather: "Clear",
+                color_mood: "Warm",
+                film_texture: ["35mm grain"],
+                environment: "Indoor",
+                era_style: "1970s",
+                motion_cues: ["Static"],
+                reflections: [],
+                people_density: "Crowded",
+                negative_elements: ["No logos", "No watermark"],
+                mood: "Romantic and nostalgic"
+            }
+        },
+        {
+            title: "Tokyo neon rain",
+            data: {
+                subject: "Pedestrians with umbrellas crossing a busy Shibuya intersection, neon signs reflecting on the wet pavement.",
+                camera: "Sony a9 (2017)",
+                lens: "24-70mm",
+                framing: "Horizontal",
+                aspect_ratio: "16:9",
+                composition: ["Leading lines"],
+                shot_size: "Wide shot (WS)",
+                camera_move: ["Push-in"],
+                lighting: "Night",
+                weather: "Rain",
+                color_mood: "Teal-orange",
+                film_texture: ["Chromatic aberration"],
+                environment: "Urban",
+                era_style: "2010s",
+                motion_cues: ["Motion blur"],
+                reflections: ["Wet pavement", "Neon reflections"],
+                people_density: "Crowded",
+                negative_elements: ["No text", "No logos"],
+                mood: "Energetic and modern"
+            }
+        },
+        {
+            title: "Parisian café romance",
+            data: {
+                subject: "A couple sits at a small table outside a Parisian café, sharing coffee as rain gently falls around them.",
+                camera: "Leica M3 (1954)",
+                lens: "35mm",
+                framing: "Horizontal",
+                aspect_ratio: "3:2",
+                composition: ["Rule of thirds"],
+                shot_size: "Medium shot (MS)",
+                camera_move: ["Static"],
+                lighting: "Afternoon",
+                weather: "Drizzle",
+                color_mood: "Pastel",
+                film_texture: ["35mm grain"],
+                environment: "Urban",
+                era_style: "1960s",
+                motion_cues: ["Static"],
+                reflections: ["Wet pavement"],
+                people_density: "Sparse",
+                negative_elements: ["No logos"],
+                mood: "Romantic and whimsical"
+            }
+        },
+        {
+            title: "Favela chase",
+            data: {
+                subject: "Two teenagers race through the narrow alleys of a Brazilian favela, laundry lines overhead and vibrant murals on the walls.",
+                camera: "Canon 5D Mark II (2008)",
+                lens: "24-105mm",
+                framing: "Horizontal",
+                aspect_ratio: "2.39:1",
+                composition: ["Leading lines", "Dutch angle"],
+                shot_size: "Medium shot (MS)",
+                camera_move: ["Handheld", "Tracking shot"],
+                lighting: "Afternoon",
+                weather: "Clear",
+                color_mood: "Vibrant",
+                film_texture: ["Chromatic aberration"],
+                environment: "Urban",
+                era_style: "2000s",
+                motion_cues: ["Motion blur", "Rack focus"],
+                reflections: [],
+                people_density: "Normal",
+                negative_elements: ["No logos"],
+                mood: "Energetic and gritty"
+            }
+        },
+        {
+            title: "Labyrinth dream forest",
+            data: {
+                subject: "A young girl explores an ancient, moss-covered forest where glowing fairies hover between twisted trees.",
+                camera: "Pentax Spotmatic (1964)",
+                lens: "50mm",
+                framing: "Vertical",
+                aspect_ratio: "9:16",
+                composition: ["Frame within a frame", "Negative space"],
+                shot_size: "Medium close-up (MCU)",
+                camera_move: ["Pull-out"],
+                lighting: "Dusk",
+                weather: "Fog",
+                color_mood: "Pastel",
+                film_texture: ["Bloom", "Halation"],
+                environment: "Forest",
+                era_style: "Contemporary",
+                motion_cues: ["Slow motion"],
+                reflections: [],
+                people_density: "Empty",
+                negative_elements: ["No text", "No watermark"],
+                mood: "Mystical and melancholic"
+            }
+        },
+        {
+            title: "Roma street life",
+            data: {
+                subject: "Children play in a puddled Mexico City street as laundry hangs above and a black-and-white palette evokes the 1970s.",
+                camera: "Canon AE-1 (1976)",
+                lens: "35mm",
+                framing: "Horizontal",
+                aspect_ratio: "4:3",
+                composition: ["Rule of thirds"],
+                shot_size: "Medium wide shot (MWS)",
+                camera_move: ["Static"],
+                lighting: "Morning",
+                weather: "Cloudy",
+                color_mood: "Monochrome",
+                film_texture: ["35mm grain"],
+                environment: "Urban",
+                era_style: "1970s",
+                motion_cues: ["Freeze action"],
+                reflections: ["Puddles"],
+                people_density: "Sparse",
+                negative_elements: ["No logos", "No text"],
+                mood: "Melancholic and nostalgic"
+            }
+        },
+        {
+            title: "Anime street festival",
+            data: {
+                subject: "Cosplayers fill a bustling Japanese street festival with lanterns and cherry blossoms overhead.",
+                camera: "Sony a7 (2013)",
+                lens: "50mm",
+                framing: "Horizontal",
+                aspect_ratio: "16:9",
+                composition: ["Centered"],
+                shot_size: "Group shot",
+                camera_move: ["Handheld"],
+                lighting: "Afternoon",
+                weather: "Clear",
+                color_mood: "Colourful",
+                film_texture: ["Bokeh"],
+                environment: "Urban",
+                era_style: "2010s",
+                motion_cues: ["Slow motion"],
+                reflections: ["Glass"],
+                people_density: "Crowded",
+                negative_elements: ["No logos"],
+                mood: "Joyful and whimsical"
+            }
+        }
     ];
 
     // Utility function: join an array into a human‑readable list
@@ -663,53 +912,89 @@
         return allButLast.join(", ") + " and " + arr[arr.length - 1];
     }
 
-    // Build camera select with optgroups for film, digital and phone cameras.
-    function populateCameraSelect() {
-        const select = document.getElementById('camera');
-        select.innerHTML = '';
-        // Add an initial None option
-        const noneOpt = document.createElement('option');
-        noneOpt.value = '';
-        noneOpt.textContent = 'None';
-        select.appendChild(noneOpt);
-        function addGroup(label, items) {
-            const group = document.createElement('optgroup');
-            group.label = label;
-            items.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item;
-                opt.textContent = item;
-                group.appendChild(opt);
-            });
-            select.appendChild(group);
-        }
-        addGroup('Film Cameras', FILM_CAMERAS);
-        addGroup('Digital Cameras', DIGITAL_CAMERAS);
-        addGroup('Phone Cameras', PHONE_CAMERAS);
+    // Populate camera type dropdown
+    function populateCameraType() {
+        const typeSel = document.getElementById('camera_type');
+        typeSel.innerHTML = '';
+        const none = document.createElement('option');
+        none.value = '';
+        none.textContent = 'None';
+        typeSel.appendChild(none);
+        CAMERA_TYPES.forEach(type => {
+            const opt = document.createElement('option');
+            opt.value = type;
+            opt.textContent = type;
+            typeSel.appendChild(opt);
+        });
     }
 
-    // Build lens select with optgroups for film, digital and phone lenses.
-    function populateLensSelect() {
-        const select = document.getElementById('lens');
-        select.innerHTML = '';
+    // Populate camera model dropdown based on selected type
+    function populateCameraOptions(type) {
+        const camSel = document.getElementById('camera');
+        camSel.innerHTML = '';
         const noneOpt = document.createElement('option');
         noneOpt.value = '';
         noneOpt.textContent = 'None';
-        select.appendChild(noneOpt);
-        function addGroup(label, items) {
-            const group = document.createElement('optgroup');
-            group.label = label;
-            items.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item;
-                opt.textContent = item;
-                group.appendChild(opt);
-            });
-            select.appendChild(group);
-        }
-        addGroup('Film Lenses', FILM_LENSES);
-        addGroup('Digital Lenses', DIGITAL_LENSES);
-        addGroup('Phone Lenses', PHONE_LENSES);
+        camSel.appendChild(noneOpt);
+        if (!type || !CAMERAS_BY_TYPE[type]) return;
+        CAMERAS_BY_TYPE[type].forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item;
+            opt.textContent = item;
+            camSel.appendChild(opt);
+        });
+    }
+
+    // Populate lens type dropdown
+    function populateLensType() {
+        const typeSel = document.getElementById('lens_type');
+        typeSel.innerHTML = '';
+        const none = document.createElement('option');
+        none.value = '';
+        none.textContent = 'None';
+        typeSel.appendChild(none);
+        Object.keys(LENS_TYPES).forEach(type => {
+            const opt = document.createElement('option');
+            opt.value = type;
+            opt.textContent = type;
+            typeSel.appendChild(opt);
+        });
+    }
+
+    // Populate lens focal lengths or names based on selected lens type
+    function populateLensOptions(type) {
+        const lensSel = document.getElementById('lens');
+        lensSel.innerHTML = '';
+        const none = document.createElement('option');
+        none.value = '';
+        none.textContent = 'None';
+        lensSel.appendChild(none);
+        if (!type || !LENS_TYPES[type]) return;
+        LENS_TYPES[type].forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item;
+            opt.textContent = item;
+            lensSel.appendChild(opt);
+        });
+    }
+
+    // Build a group of checkboxes for negative prompts
+    function populateNegativeCheckboxes() {
+        const container = document.getElementById('negative-checkboxes');
+        if (!container) return;
+        container.innerHTML = '';
+        NEGATIVE_ELEMENTS.forEach(item => {
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = item.name;
+            // Use title attribute to show description on hover
+            checkbox.title = item.desc;
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(' ' + item.name));
+            label.style.marginRight = '8px';
+            container.appendChild(label);
+        });
     }
 
     // Populate dropdowns and multi-select lists
@@ -795,15 +1080,39 @@
         // Subject
         document.getElementById('subject').value = data.subject || '';
         // Rebuild camera and lens lists and assign values
-        populateCameraSelect();
-        populateLensSelect();
+        populateCameraType();
+        populateLensType();
+        // Determine camera type from stored camera model
+        let camType = '';
+        if (data.camera) {
+            for (const [type, list] of Object.entries(CAMERAS_BY_TYPE)) {
+                if (list.includes(data.camera)) { camType = type; break; }
+            }
+        }
+        document.getElementById('camera_type').value = camType || '';
+        populateCameraOptions(camType || '');
         document.getElementById('camera').value = data.camera || '';
+        // Determine lens type from stored lens
+        let lensType = '';
+        if (data.lens) {
+            for (const [type, list] of Object.entries(LENS_TYPES)) {
+                if (list.includes(data.lens)) { lensType = type; break; }
+            }
+        }
+        document.getElementById('lens_type').value = lensType || '';
+        populateLensOptions(lensType || '');
         document.getElementById('lens').value = data.lens || '';
         // Simple selects
         document.getElementById('framing').value = data.framing || '';
         document.getElementById('aspect_ratio').value = data.aspect_ratio || '';
         document.getElementById('shot_size').value = data.shot_size || '';
-        document.getElementById('camera_move').value = data.camera_move || '';
+        // Multi-select camera moves
+        const cameraMoveSel = document.getElementById('camera_move');
+        for (let i = 0; i < cameraMoveSel.options.length; i++) cameraMoveSel.options[i].selected = false;
+        (data.camera_move || []).forEach(val => {
+            const opt = Array.from(cameraMoveSel.options).find(o => o.value === val);
+            if (opt) opt.selected = true;
+        });
         document.getElementById('lighting').value = data.lighting || '';
         document.getElementById('weather').value = data.weather || '';
         document.getElementById('color_mood').value = data.color_mood || '';
@@ -821,7 +1130,7 @@
         document.getElementById('reflectionsDetails').value = data.reflectionsDetails || '';
         document.getElementById('peopleDensityDetails').value = data.peopleDensityDetails || '';
         document.getElementById('negativeDetails').value = data.negativeDetails || '';
-        // Multi-select lists
+        // Multi-select lists helper
         function setMultiSelect(id, values) {
             const select = document.getElementById(id);
             for (let i = 0; i < select.options.length; i++) {
@@ -838,7 +1147,12 @@
         });
         setMultiSelect('motion_cues', data.motion_cues || []);
         setMultiSelect('reflections', data.reflections || []);
-        setMultiSelect('negative_elements', data.negative_elements || []);
+        // Negative elements via checkboxes
+        document.querySelectorAll('#negative-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+        (data.negative_elements || []).forEach(val => {
+            const cb = Array.from(document.querySelectorAll('#negative-checkboxes input[type="checkbox"]')).find(c => c.value === val);
+            if (cb) cb.checked = true;
+        });
         // Mood: set checkboxes and details
         document.querySelectorAll('#mood-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
         if (data.mood) {
@@ -864,6 +1178,10 @@
         } else {
             document.getElementById('moodDetails').value = '';
         }
+        // Set custom fields
+        document.getElementById('compositionDetails').value = data.compositionDetails || '';
+        document.getElementById('shotSizeDetails').value = data.shotSizeDetails || '';
+        document.getElementById('cameraMoveDetails').value = data.cameraMoveDetails || '';
     }
 
     // Generate prompt text
@@ -877,9 +1195,15 @@
         const lens = document.getElementById('lens').value;
         const framing = document.getElementById('framing').value;
         const aspect = document.getElementById('aspect_ratio').value;
-        const composition = Array.from(document.getElementById('composition').selectedOptions).map(opt => opt.value).filter(v => v);
+        let composition = Array.from(document.getElementById('composition').selectedOptions).map(opt => opt.value).filter(v => v);
+        // Include custom composition text
+        const compositionDetails = document.getElementById('compositionDetails').value.trim();
+        if (compositionDetails) composition.push(compositionDetails);
         const shotSize = document.getElementById('shot_size').value;
-        const cameraMove = document.getElementById('camera_move').value;
+        const shotSizeDetails = document.getElementById('shotSizeDetails').value.trim();
+        // Gather multiple camera movements
+        const cameraMoves = Array.from(document.getElementById('camera_move').selectedOptions).map(opt => opt.value).filter(v => v);
+        const cameraMoveDetails = document.getElementById('cameraMoveDetails').value.trim();
         const lighting = document.getElementById('lighting').value;
         const lightingDetails = document.getElementById('lightingDetails').value.trim();
         const weather = document.getElementById('weather').value;
@@ -898,7 +1222,7 @@
         const reflectionsDetails = document.getElementById('reflectionsDetails').value.trim();
         const peopleDensity = document.getElementById('people_density').value;
         const peopleDensityDetails = document.getElementById('peopleDensityDetails').value.trim();
-        const negativeElements = Array.from(document.getElementById('negative_elements').selectedOptions).map(opt => opt.value).filter(v => v);
+        const negativeElements = Array.from(document.querySelectorAll('#negative-checkboxes input[type="checkbox"]:checked')).map(cb => cb.value);
         const negativeDetails = document.getElementById('negativeDetails').value.trim();
 
         let parts = [];
@@ -922,11 +1246,19 @@
         if (composition.length > 0) {
             parts.push(`Composed using ${formatList(composition)}.`);
         }
-        if (shotSize && shotSize !== 'None') {
-            parts.push(`The framing is ${shotSize.toLowerCase()}.`);
+        // Shot size combined with optional details
+        if ((shotSize && shotSize !== 'None') || shotSizeDetails) {
+            let ssStr = '';
+            if (shotSize && shotSize !== 'None') ssStr += shotSize.toLowerCase();
+            if (shotSizeDetails) ssStr += (ssStr ? ' (' : '') + shotSizeDetails + (ssStr ? ')' : '');
+            parts.push(`The framing is ${ssStr}.`);
         }
-        if (cameraMove && cameraMove !== 'None') {
-            parts.push(`Camera movement: ${cameraMove.toLowerCase()}.`);
+        // Camera movement combined with optional details
+        if (cameraMoves.length > 0 || cameraMoveDetails) {
+            let cmStr = '';
+            if (cameraMoves.length > 0) cmStr += formatList(cameraMoves).toLowerCase();
+            if (cameraMoveDetails) cmStr += (cmStr ? ' (' : '') + cameraMoveDetails + (cmStr ? ')' : '');
+            parts.push(`Camera movement: ${cmStr}.`);
         }
         // Lighting and weather with details
         if ((lighting && lighting !== 'None') || lightingDetails || (weather && weather !== 'None') || weatherDetails) {
@@ -1050,9 +1382,18 @@
             lens: document.getElementById('lens').value,
             framing: document.getElementById('framing').value,
             aspect_ratio: document.getElementById('aspect_ratio').value,
-            composition: Array.from(document.getElementById('composition').selectedOptions).map(o => o.value).filter(v => v),
+            // Save composition selections and custom composition
+            composition: (() => {
+                const selected = Array.from(document.getElementById('composition').selectedOptions).map(o => o.value).filter(v => v);
+                const extra = document.getElementById('compositionDetails').value.trim();
+                return extra ? selected.concat(extra) : selected;
+            })(),
+            // Save shot size and details separately for clarity
             shot_size: document.getElementById('shot_size').value,
-            camera_move: document.getElementById('camera_move').value,
+            shotSizeDetails: document.getElementById('shotSizeDetails').value.trim(),
+            // Camera movement as array and custom details
+            camera_move: Array.from(document.getElementById('camera_move').selectedOptions).map(o => o.value).filter(v => v),
+            cameraMoveDetails: document.getElementById('cameraMoveDetails').value.trim(),
             lighting: document.getElementById('lighting').value,
             lightingDetails: document.getElementById('lightingDetails').value.trim(),
             weather: document.getElementById('weather').value,
@@ -1071,9 +1412,13 @@
             reflectionsDetails: document.getElementById('reflectionsDetails').value.trim(),
             people_density: document.getElementById('people_density').value,
             peopleDensityDetails: document.getElementById('peopleDensityDetails').value.trim(),
-            negative_elements: Array.from(document.getElementById('negative_elements').selectedOptions).map(o => o.value).filter(v => v),
+            // Negative elements from checkboxes
+            negative_elements: Array.from(document.querySelectorAll('#negative-checkboxes input[type="checkbox"]:checked')).map(cb => cb.value),
             negativeDetails: document.getElementById('negativeDetails').value.trim(),
-            mood: moodStr
+            // Persist mood string assembled above
+            mood: moodStr,
+            // Persist custom composition, shot size and camera movement details for editing
+            compositionDetails: document.getElementById('compositionDetails').value.trim()
         };
         // Load existing presets
         const presets = getPresets();
@@ -1100,9 +1445,12 @@
 
     // Bind events and initialise the form
     window.addEventListener('DOMContentLoaded', () => {
-        // Populate selects with new grouping and "None" options
-        populateCameraSelect();
-        populateLensSelect();
+        // Populate camera and lens selects with nested types
+        populateCameraType();
+        populateCameraOptions('');
+        populateLensType();
+        populateLensOptions('');
+        // Populate the rest of the dropdowns and lists
         populateSelect('framing', FRAMINGS);
         populateSelect('aspect_ratio', ASPECT_RATIOS);
         populateSelectWithTooltip('composition', COMPOSITIONS);
@@ -1110,8 +1458,9 @@
         populateSelectWithTooltip('camera_move', CAMERA_MOVES);
         populateSelect('lighting', LIGHTING_TIMES);
         populateSelect('weather', WEATHERS);
-        populateSelect('color_mood', COLOR_MOODS);
-        // Film texture is multi-select but we still want None option first
+        // Use tooltip-aware population for colour mood
+        populateSelectWithTooltip('color_mood', COLOR_MOODS);
+        // Film texture multi-select
         const filmTextureSelect = document.getElementById('film_texture');
         filmTextureSelect.innerHTML = '';
         const ftNone = document.createElement('option');
@@ -1129,11 +1478,18 @@
         populateSelectWithTooltip('motion_cues', MOTION_CUES);
         populateSelect('reflections', REFLECTIONS);
         populateSelect('people_density', PEOPLE_DENSITY);
-        populateSelectWithTooltip('negative_elements', NEGATIVE_ELEMENTS);
+        // Build negative element checkboxes instead of multi-select
+        populateNegativeCheckboxes();
         // Load presets into dropdown
         refreshPresetSelect();
-
-        // Event listeners
+        // Event listeners for nested selects
+        document.getElementById('camera_type').addEventListener('change', (e) => {
+            populateCameraOptions(e.target.value);
+        });
+        document.getElementById('lens_type').addEventListener('change', (e) => {
+            populateLensOptions(e.target.value);
+        });
+        // Event listeners for buttons
         document.getElementById('generateBtn').addEventListener('click', generatePrompt);
         document.getElementById('copyBtn').addEventListener('click', copyPrompt);
         document.getElementById('clearBtn').addEventListener('click', clearForm);
@@ -1153,19 +1509,15 @@
                 event.preventDefault();
             }
         });
-
         // Auto-resize subject textarea as the user types.  Ensures the subject/action field grows
         // vertically to accommodate long descriptions without introducing scrollbars.
         const subjectTextarea = document.getElementById('subject');
         if (subjectTextarea) {
             const autoResize = () => {
-                // Reset height to auto to shrink if needed, then set to scrollHeight to expand
                 subjectTextarea.style.height = 'auto';
                 subjectTextarea.style.height = (subjectTextarea.scrollHeight + 2) + 'px';
             };
-            // Run once on load to set initial height
             autoResize();
-            // Bind the autoResize function to input events
             subjectTextarea.addEventListener('input', autoResize);
         }
     });
@@ -1178,15 +1530,26 @@
         // Uncheck mood checkboxes
         document.querySelectorAll('#mood-checkboxes input[type="checkbox"]').forEach(cb => { cb.checked = false; });
         // Reset camera and lens selects via our populate functions
-        populateCameraSelect();
-        populateLensSelect();
+        populateCameraType();
+        populateCameraOptions('');
+        populateLensType();
+        populateLensOptions('');
+        // Explicitly select the "None" option for both type and model selects
+        const camTypeSel = document.getElementById('camera_type');
+        if (camTypeSel) camTypeSel.selectedIndex = 0;
+        const camSel = document.getElementById('camera');
+        if (camSel) camSel.selectedIndex = 0;
+        const lensTypeSel = document.getElementById('lens_type');
+        if (lensTypeSel) lensTypeSel.selectedIndex = 0;
+        const lensSel = document.getElementById('lens');
+        if (lensSel) lensSel.selectedIndex = 0;
         // Reset other selects
         ['framing','aspect_ratio','lighting','weather','color_mood','environment','era_style','people_density'].forEach(id => {
             const sel = document.getElementById(id);
             if (sel) sel.selectedIndex = 0;
         });
-        // Reset multi-selects (composition, shot_size, camera_move, motion_cues, reflections, negative_elements)
-        ['composition','shot_size','camera_move','motion_cues','reflections','film_texture','negative_elements'].forEach(id => {
+        // Reset multi-selects (composition, shot_size, camera_move, motion_cues, reflections, film_texture)
+        ['composition','shot_size','camera_move','motion_cues','reflections','film_texture'].forEach(id => {
             const sel = document.getElementById(id);
             if (sel) {
                 for (let i = 0; i < sel.options.length; i++) {
@@ -1198,8 +1561,10 @@
                 }
             }
         });
+        // Uncheck negative elements
+        document.querySelectorAll('#negative-checkboxes input[type="checkbox"]').forEach(cb => { cb.checked = false; });
         // Reset details fields
-        ['lightingDetails','weatherDetails','colorMoodDetails','filmTextureDetails','environmentDetails','eraStyleDetails','motionCuesDetails','reflectionsDetails','peopleDensityDetails','negativeDetails'].forEach(id => {
+        ['lightingDetails','weatherDetails','colorMoodDetails','filmTextureDetails','environmentDetails','eraStyleDetails','motionCuesDetails','reflectionsDetails','peopleDensityDetails','negativeDetails','compositionDetails','shotSizeDetails','cameraMoveDetails'].forEach(id => {
             const input = document.getElementById(id);
             if (input) input.value = '';
         });
