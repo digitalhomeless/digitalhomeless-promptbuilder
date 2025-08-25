@@ -1,256 +1,146 @@
-<!--
-    CinePrompt Studio Web App
-
-    This single‑page application replicates the functionality of the
-    original Tkinter desktop prompt builder in a form that runs
-    entirely within a modern web browser like Chrome.  It allows
-    users to assemble richly detailed prompts for AI image generation
-    (MidJourney, Stable Diffusion, Google Whisk, etc.) by selecting
-    from a comprehensive set of cinematic options.  The interface
-    includes free‑text fields, single‑choice dropdowns, multi‑select
-    lists with helpful tooltips, and preset storage using browser
-    local storage.  A dark theme ensures comfortable use for long
-    editing sessions.
-
-    This version introduces several improvements:
-      * Added version number (0.0.4) to reflect the 5th pre‑alpha iteration.
-      * Extracted CSS and JavaScript into external files for maintainability.
-      * Added collapsible (accordion) sections for better navigation.
-      * Increased contrast on form borders for improved accessibility.
-      * Added ARIA labels to form controls for screen reader support.
-      * Added export/import functionality for presets.
-      * Implemented a live preview that updates the prompt as options change.
-      * Added a fallback mechanism for copying text to the clipboard.
-
-    Usage:
-      1. Open this HTML file in your web browser (e.g. double‑click it
-         or drag it into a Chrome window).
-      2. Expand the sections and fill in the subject/action and mood fields.
-      3. Choose your desired options from the dropdowns and
-         multi‑select lists.  Hold Ctrl (or Cmd on Mac) to select
-         multiple entries in the multi‑select lists.
-      4. The generated prompt updates automatically in the preview area as
-         you change options.  You can also click "Generate Prompt" to
-         manually rebuild the prompt.
-      5. Click "Copy Prompt" to copy the generated prompt to your
-         clipboard.  A small check mark will briefly appear on success.
-      6. To save the current configuration as a preset, enter a
-         preset name and click "Save Preset".  Saved presets are
-         stored in your browser's local storage and are automatically
-         listed in the "Load Preset" dropdown on future visits.
-      7. Use the "Export Presets" button to download your presets as a JSON
-         file and "Import Presets" to load presets from such a file.
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Title with version number for the pre‑alpha release -->
-    <title>CinePrompt Studio v0.4.1 alpha.1</title>
-    <!-- External stylesheet for dark theme and layout -->
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>CinePrompt Studio v0.4.1 alpha.1</h1>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Cinematic Prompt Template</title>
+  <link rel="stylesheet" href="style.css">
+</head><body>
+  <header class="app-header">
+    <h1>🎬 AI Cinematic Prompt Template</h1>
+    <p class="tagline">Craft the perfect cinematic scene with detailed prompts</p>
+  </header>
 
-        <!-- Camera & Composition section -->
-        <details class="section" open>
-            <summary>Camera & Composition</summary>
-            <div class="row">
-                <div class="col tooltip">
-                    <label id="shotSizeLabel" for="shot_size">1. Shot size</label>
-                    <!-- Associate the select with its descriptive tooltip for screen readers -->
-                    <select id="shot_size" aria-labelledby="shotSizeLabel" aria-describedby="shotSizeTooltip"></select>
-                    <input type="text" id="shotSizeDetails" placeholder="Shot size details (optional)" style="margin-top:4px;">
-                    <!-- Provide a unique id for the tooltip so it can be referenced via aria-describedby -->
-                    <span class="tooltiptext" id="shotSizeTooltip">Choose how close or wide the camera frames the subject, or specify a custom shot size.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="compositionLabel" for="composition">2. Composition</label>
-                    <select id="composition" multiple aria-labelledby="compositionLabel" aria-describedby="compositionTooltip"></select>
-                    <input type="text" id="compositionDetails" placeholder="Custom composition (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="compositionTooltip">Select one or more composition rules or enter your own below.</span>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col" style="flex: 1 1 100%;">
-                    <label id="subjectLabel" for="subject">3. Subject / Action</label>
-                    <textarea id="subject" aria-labelledby="subjectLabel" placeholder="Describe the main subject and action…" style="resize: vertical; overflow-y: hidden; min-height: 120px;"></textarea>
-                </div>
-            </div>
-        </details>
+  <main>
+    <form id="prompt-form" onsubmit="return false;">
 
-        <!-- Camera & Lens section -->
-        <details class="section">
-            <summary>Camera & Lens</summary>
-            <div class="row">
-                <div class="col tooltip">
-                    <label id="cameraLabel" for="camera_type">4. Camera</label>
-                    <select id="camera_type" aria-labelledby="cameraLabel" aria-describedby="cameraTooltip"></select>
-                    <select id="camera" aria-label="Camera model" aria-describedby="cameraTooltip"></select>
-                    <span class="tooltiptext" id="cameraTooltip">Choose a camera category and then a specific model.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="lensLabel" for="lens_type">5. Lens / Focal length</label>
-                    <select id="lens_type" aria-labelledby="lensLabel" aria-describedby="lensTooltip"></select>
-                    <select id="lens" aria-label="Lens focal length" aria-describedby="lensTooltip"></select>
-                    <span class="tooltiptext" id="lensTooltip">Select a lens category followed by a specific focal length.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="framingLabel" for="framing">17. Shot framing</label>
-                    <select id="framing" aria-labelledby="framingLabel" aria-describedby="framingTooltip"></select>
-                    <span class="tooltiptext" id="framingTooltip">Choose the general orientation of the frame (vertical, horizontal, square).</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="aspectLabel" for="aspect_ratio">18. Aspect ratio</label>
-                    <select id="aspect_ratio" aria-labelledby="aspectLabel" aria-describedby="aspectTooltip"></select>
-                    <span class="tooltiptext" id="aspectTooltip">Select the width‑to‑height ratio for the image.</span>
-                </div>
-            </div>
-        </details>
-
-        <!-- Mood & Atmosphere section -->
-        <details class="section">
-            <summary>Mood & Atmosphere</summary>
-            <div class="row">
-                <div class="col tooltip">
-                    <label id="lightingLabel" for="lighting">6. Lighting time</label>
-                    <select id="lighting" aria-labelledby="lightingLabel" aria-describedby="lightingTooltip"></select>
-                    <input type="text" id="lightingDetails" placeholder="Lighting details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="lightingTooltip">Select the time of day or lighting condition. Additional details can be provided below.</span>
-                </div>
-                <div class="col">
-                    <label id="moodLabel" for="mood-checkboxes">7. Mood / Atmosphere</label>
-                    <div id="mood-checkboxes" style="display:flex; flex-wrap:wrap; gap:8px;">
-                        <label><input type="checkbox" value="Romantic"> Romantic</label>
-                        <label><input type="checkbox" value="Dark"> Dark</label>
-                        <label><input type="checkbox" value="Light-hearted"> Light-hearted</label>
-                        <label><input type="checkbox" value="Mysterious"> Mysterious</label>
-                        <label><input type="checkbox" value="Melancholic"> Melancholic</label>
-                        <label><input type="checkbox" value="Whimsical"> Whimsical</label>
-                        <label><input type="checkbox" value="Epic"> Epic</label>
-                        <label><input type="checkbox" value="Hopeful"> Hopeful</label>
-                        <label><input type="checkbox" value="Nostalgic"> Nostalgic</label>
-                    </div>
-                    <input type="text" id="moodDetails" placeholder="Mood details (optional)" style="margin-top:4px; width:100%;">
-                </div>
-                <div class="col tooltip">
-                    <label id="weatherLabel" for="weather">8. Weather / Atmosphere</label>
-                    <select id="weather" aria-labelledby="weatherLabel" aria-describedby="weatherTooltip"></select>
-                    <input type="text" id="weatherDetails" placeholder="Weather details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="weatherTooltip">Select the weather condition. Additional details can be provided below.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="colorMoodLabel" for="color_mood">9. Colour mood</label>
-                    <select id="color_mood" aria-labelledby="colorMoodLabel" aria-describedby="colorMoodTooltip"></select>
-                    <input type="text" id="colorMoodDetails" placeholder="Colour mood details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="colorMoodTooltip">Choose a colour palette or feeling, e.g. warm, cool, vibrant.</span>
-                </div>
-            </div>
-        </details>
-
-        <!-- Context & Setting section -->
-        <details class="section">
-            <summary>Context & Setting</summary>
-            <div class="row">
-                <div class="col tooltip">
-                    <label id="peopleDensityLabel" for="people_density">10. People density</label>
-                    <select id="people_density" aria-labelledby="peopleDensityLabel" aria-describedby="peopleDensityTooltip"></select>
-                    <input type="text" id="peopleDensityDetails" placeholder="People density details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="peopleDensityTooltip">Specify how populated the scene is, from empty to crowded.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="eraStyleLabel" for="era_style">11. Era / Styling</label>
-                    <select id="era_style" aria-labelledby="eraStyleLabel" aria-describedby="eraStyleTooltip"></select>
-                    <input type="text" id="eraStyleDetails" placeholder="Era/style details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="eraStyleTooltip">Select a time period or stylistic era.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="environmentLabel" for="environment">12. Environment</label>
-                    <select id="environment" aria-labelledby="environmentLabel" aria-describedby="environmentTooltip"></select>
-                    <input type="text" id="environmentDetails" placeholder="Environment details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="environmentTooltip">Choose the setting or landscape of the scene.</span>
-                </div>
-            </div>
-        </details>
-
-        <!-- Motion & Effects section -->
-        <details class="section">
-            <summary>Motion & Effects</summary>
-            <div class="row">
-                <div class="col tooltip">
-                    <label id="cameraMoveLabel" for="camera_move">13. Camera movement</label>
-                    <select id="camera_move" multiple aria-labelledby="cameraMoveLabel" aria-describedby="cameraMoveTooltip"></select>
-                    <input type="text" id="cameraMoveDetails" placeholder="Camera movement details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="cameraMoveTooltip">Select one or more camera moves (use Ctrl/Cmd for multi‑select) and optionally provide further detail.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="filmTextureLabel" for="film_texture">14. Film texture</label>
-                    <select id="film_texture" multiple aria-labelledby="filmTextureLabel" aria-describedby="filmTextureTooltip"></select>
-                    <input type="text" id="filmTextureDetails" placeholder="Film texture details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="filmTextureTooltip">Choose film textures such as grain, bloom or VHS artefacts.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="motionCuesLabel" for="motion_cues">15. Motion cues</label>
-                    <select id="motion_cues" multiple aria-labelledby="motionCuesLabel" aria-describedby="motionCuesTooltip"></select>
-                    <input type="text" id="motionCuesDetails" placeholder="Motion cues details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="motionCuesTooltip">Select cues like motion blur, slow motion or time‑lapse.</span>
-                </div>
-                <div class="col tooltip">
-                    <label id="reflectionsLabel" for="reflections">16. Reflections / Surfaces</label>
-                    <select id="reflections" multiple aria-labelledby="reflectionsLabel" aria-describedby="reflectionsTooltip"></select>
-                    <input type="text" id="reflectionsDetails" placeholder="Reflections details (optional)" style="margin-top:4px;">
-                    <span class="tooltiptext" id="reflectionsTooltip">Select reflective elements such as wet pavement, glass or water.</span>
-                </div>
-            </div>
-        </details>
-
-        <!-- Negative elements section -->
-        <details class="section">
-            <summary>Negative elements</summary>
-            <div class="row">
-                <div class="col tooltip" style="flex: 1 1 100%;">
-                    <label id="negativeLabel" for="negative-checkboxes">19. Negative elements</label>
-                    <div id="negative-checkboxes" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
-                    <input type="text" id="negativeDetails" placeholder="Additional negative prompts (optional)" aria-describedby="negativeTooltip" style="margin-top:4px; width:100%;">
-                    <span class="tooltiptext" id="negativeTooltip">Choose any number of negative prompts and/or enter your own to exclude unwanted elements.</span>
-                </div>
-            </div>
-        </details>
-
-        <!-- Control buttons -->
-        <button id="generateBtn">Generate Prompt</button>
-        <button id="copyBtn">Copy Prompt</button>
-        <!-- Copy message and check mark animation -->
-        <span id="copyMessage" style="display:none; color: lightgreen; margin-left:10px; font-size:0.9em; vertical-align: middle;">Copied!</span>
-        <span id="copyCheck" style="display:none; color: lightgreen; margin-left:4px; font-size:1.2em; vertical-align: middle;">✓</span>
-        <button id="clearBtn">Clear All</button>
-
-        <!-- Preset controls -->
-        <div style="margin-top: 24px;">
-            <label for="preset_select">Load preset</label>
-            <select id="preset_select"></select>
-            <button id="loadPresetBtn">Load</button>
-            <div class="preset-controls">
-                <input type="text" id="preset_name" placeholder="Preset name…">
-                <button id="savePresetBtn">Save Preset</button>
-                <button id="exportPresetsBtn">Export Presets</button>
-                <button id="importPresetsBtn">Import Presets</button>
-                <input type="file" id="importFileInput" accept=".json" style="display:none">
-            </div>
+      <fieldset>
+        <legend>🎥 Camera Setup</legend>
+        <div class="row">
+          <label for="shot_size">Shot Size</label>
+          <input type="text" id="shot_size" placeholder="e.g., Medium Close-Up, Wide Shot">
         </div>
-
-        <!-- Output area -->
-        <div class="output">
-            <label id="outputLabel" for="output">Generated prompt</label>
-            <textarea id="output" aria-labelledby="outputLabel" readonly></textarea>
+        <div class="row">
+          <label for="composition">Composition</label>
+          <input type="text" id="composition" placeholder="e.g., Rule of Thirds, Symmetric">
         </div>
-    </div>
+        <div class="row">
+          <label for="camera">Camera (type/model/medium)</label>
+          <input type="text" id="camera" placeholder="e.g., Arri Alexa, 35mm film">
+        </div>
+        <div class="row">
+          <label for="lens_type">Lens Type</label>
+          <input type="text" id="lens_type" placeholder="e.g., Anamorphic, Prime Lens">
+        </div>
+        <div class="row">
+          <label for="focal_length">Focal Length</label>
+          <input type="text" id="focal_length" placeholder="e.g., 50mm, 85mm">
+        </div>
+        <div class="row">
+          <label for="aspect_ratio">Aspect Ratio</label>
+          <input type="text" id="aspect_ratio" placeholder="e.g., 2.39:1, 16:9">
+        </div>
+      </fieldset>
 
-    <!-- External script containing logic and data -->
-    <script src="script.js"></script>
+      <fieldset>
+        <legend>🏞️ Scene Setup</legend>
+        <div class="row">
+          <label for="shot_framing">Shot Framing</label>
+          <input type="text" id="shot_framing" placeholder="e.g., Over-the-shoulder, POV">
+        </div>
+        <div class="row">
+          <label for="camera_movement">Camera Movement</label>
+          <input type="text" id="camera_movement" placeholder="e.g., Slow dolly in, Handheld">
+        </div>
+        <div class="row">
+          <label for="scene_lighting">Scene Lighting</label>
+          <input type="text" id="scene_lighting" placeholder="e.g., Golden hour, Neon lights">
+        </div>
+        <div class="row">
+          <label for="weather">Weather / Natural Atmosphere</label>
+          <input type="text" id="weather" placeholder="e.g., Light fog, Heavy rain">
+        </div>
+        <div class="row">
+          <label for="environment">Environment / Setting</label>
+          <textarea id="environment" placeholder="e.g., A futuristic cyberpunk city street at night..."></textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>👤 Subject Setup</legend>
+        <div class="row">
+          <label for="subject_details">Subject (appearance & details)</label>
+          <textarea id="subject_details" placeholder="e.g., A grizzled detective in a trench coat..."></textarea>
+        </div>
+        <div class="row">
+          <label for="subject_action">Subject Action</label>
+          <textarea id="subject_action" placeholder="...lighting a cigarette in the rain."></textarea>
+        </div>
+        <div class="row">
+          <label for="people_density">People Density</label>
+          <input type="text" id="people_density" placeholder="e.g., Desolate, Bustling crowd">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>🎭 Mood & Style</legend>
+        <div class="row">
+          <label for="mood">Mood / Emotional Atmosphere</label>
+          <input type="text" id="mood" placeholder="e.g., Melancholic, Tense, Nostalgic">
+        </div>
+        <div class="row">
+          <label for="color_mood">Color Mood / Palette</label>
+          <input type="text" id="color_mood" placeholder="e.g., Orange and teal, Monochrome">
+        </div>
+        <div class="row">
+          <label for="era_styling">Era / Styling / Cultural Influence</label>
+          <input type="text" id="era_styling" placeholder="e.g., 1980s retro-futurism, Victorian England">
+        </div>
+        <div class="row">
+          <label for="visual_style">Visual Style / Render Engine</label>
+          <input type="text" id="visual_style" placeholder="e.g., Photorealistic, Anime, Unreal Engine">
+        </div>
+        <div class="row">
+          <label for="texture_detail">Texture / Surface Detail</label>
+          <input type="text" id="texture_detail" placeholder="e.g., Gritty, Polished chrome, Wet pavement">
+        </div>
+        <div class="row">
+          <label for="motion_cues">Motion Cues</label>
+          <input type="text" id="motion_cues" placeholder="e.g., Motion blur, Light streaks">
+        </div>
+        <div class="row">
+          <label for="film_texture_fx">Film Texture / FX</label>
+          <input type="text" id="film_texture_fx" placeholder="e.g., 35mm film grain, Lens flare">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>⚙️ Technical</legend>
+        <div class="row">
+            <label for="negative_prompt">Negative Prompt</label>
+            <textarea id="negative_prompt" placeholder="e.g., ugly, deformed, blurry, watermark"></textarea>
+        </div>
+        <div class="row">
+          <label for="output_specs">Output Specs (resolution, format)</label>
+          <input type="text" id="output_specs" placeholder="e.g., 4K, 1080p, PNG">
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button id="generateBtn" type="button">Generate Prompt</button>
+        <button id="copyBtn" class="ghost" type="button">Copy Prompt</button>
+        <button id="clearBtn" class="ghost" type="button">Clear All</button>
+      </div>
+      <div id="copy-feedback" class="copy-feedback" style="display: none;">Copied to clipboard!</div>
+
+      <textarea id="final_prompt" placeholder="Your generated cinematic prompt will appear here..."></textarea>
+    </form>
+  </main>
+
+  <footer>
+    <p>AI Cinematic Prompt Template v1.0</p>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>

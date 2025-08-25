@@ -1,141 +1,141 @@
-/*
- * Stylesheet for CinePrompt Studio (pre‑alpha version 0.0.4)
- *
- * Provides a dark theme, responsive grid layout, tooltip
- * behaviour and styling for collapsible sections and controls.
- * The original inline styles from the earlier single‑file version
- * have been extracted here to improve maintainability.  Border
- * contrast has been increased for improved accessibility.
- */
-
-/* Base colours and typography */
-body {
-    background-color: #1e1e1e;
-    color: #d4d4d4;
-    font-family: Arial, Helvetica, sans-serif;
-    margin: 0;
-    padding: 0 20px;
-}
-h1 {
-    color: #ffffff;
-    text-align: center;
-    margin-top: 20px;
-}
-label {
-    display: block;
-    margin-top: 12px;
-    margin-bottom: 4px;
-    font-weight: bold;
+:root{
+  --bg: #1d1f21;
+  --panel: #23262a;
+  --panel-2: #2b2f34;
+  --text: #e8ecf1;
+  --muted: #a5adba;
+  --accent: #4ea1ff;
+  --accent-2: #7ed957;
+  --border: #343a40;
+  --danger: #ff6b6b;
+  --radius: 12px;
+  --space: 14px;
 }
 
-input[type="text"], select, textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #666; /* increased contrast from #444 to #666 */
-    border-radius: 4px;
-    background-color: #2a2a2a;
-    color: #d4d4d4;
-    box-sizing: border-box;
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
-select[multiple] {
-    height: 100px;
+.app-header {
+  padding: 24px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #212428 0%, #1d1f21 100%);
 }
-textarea {
-    height: 120px;
-    resize: vertical;
+h1 { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: .2px; }
+.tagline { margin: 0; color: var(--muted); font-size: 13px; }
+
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 18px;
 }
 
-/* Layout helpers */
-.container {
-    max-width: 960px;
-    margin: 0 auto;
+form fieldset {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 14px 0;
 }
+
+legend {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
 .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-.col {
-    flex: 1 1 280px;
-    min-width: 260px;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0;
 }
 
-/* Buttons */
+label {
+  color: var(--text);
+  font-size: 14px;
+}
+
+select, textarea, input[type="text"] {
+  width: 100%;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+select:focus, textarea:focus, input[type="text"]:focus, button:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+
+textarea#subject_action {
+  min-height: 120px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+textarea#final_prompt {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  background: #1a1c1f;
+  border-color: #3a3f46;
+  min-height: 120px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 button {
-    background-color: #007acc;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    margin-top: 16px;
-    border-radius: 4px;
-    cursor: pointer;
+  background: var(--accent);
+  color: #0b0d0f;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
-button:hover {
-    background-color: #005fa3;
+button.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+button:hover { filter: brightness(1.05); }
+
+.copy-feedback {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--accent-2);
 }
 
-/* Output area */
-.output {
-    margin-top: 20px;
+footer {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 20px 18px 40px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+  border-top: 1px solid var(--border);
 }
 
-/* Preset controls */
-.preset-controls {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-    flex-wrap: wrap;
-}
-.preset-controls input {
-    flex: 1 1 auto;
-}
-
-/* Tooltip styling */
-.tooltip {
-    position: relative;
-}
-.tooltip .tooltiptext {
-    visibility: hidden;
-    width: 220px;
-    background-color: #555;
-    color: #fff;
-    text-align: left;
-    border-radius: 4px;
-    padding: 6px;
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -110px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-.tooltip:hover .tooltiptext {
-    visibility: visible;
-    opacity: 1;
-}
-
-/* Collapsible sections */
-details.section {
-    background-color: #222;
-    margin-top: 16px;
-    border-radius: 4px;
-    padding: 0 12px;
-}
-details.section > summary {
-    cursor: pointer;
-    padding: 12px 0;
-    font-weight: bold;
-    color: #9cdcfe;
-    user-select: none;
-}
-details.section[open] > summary {
-    border-bottom: 1px solid #333;
-}
-
-/* Copy message animation */
-#copyMessage,
-#copyCheck {
-    transition: opacity 0.3s ease;
+@media (max-width: 720px) {
+  .row { grid-template-columns: 1fr; }
+  legend { font-size: 11px; }
+  h1 { font-size: 20px; }
 }
